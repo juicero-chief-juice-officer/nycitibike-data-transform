@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "sbh-nycitibike-trnsfrm"
+version = "0.0.0"
+description = "Transform citibike data with dbt on GCP"
+authors = ["Stephen Hazeltine"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+dbt-bigquery = "1.5.1"
+dbt-core = "1.5.0"
+pandas = "^2.0.0"
+
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
