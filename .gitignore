@@ -17,8 +17,8 @@ secrets/*
 *.tfstate.*
 
 # Crash log files
-crash.log
-crash.*.log
+*crash.log
+*crash.*.log
 
 # (Typically) Exclude all .tfvars files, which are likely to contain sensitive data, such as
 # password, private keys, and other secrets. These should not be part of version 
@@ -26,13 +26,13 @@ crash.*.log
 # to change depending on the environment.
 
 # This can be commented out if tfvars data in sanitized.
-*terraform.tfvars
-*.tfvars.json
+# *terraform.tfvars
+# *.tfvars.json
 
 # Ignore override files as they are usually used to override resources locally and so
 # are not checked in
-override.tf
-override.tf.json
+*override.tf
+*override.tf.json
 *_override.tf
 *_override.tf.json
 
@@ -43,5 +43,5 @@ override.tf.json
 # example: *tfplan*
 
 # Ignore CLI configuration files
-.terraformrc
-terraform.rc
+*.terraformrc
+*terraform.rc
