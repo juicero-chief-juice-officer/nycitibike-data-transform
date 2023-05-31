@@ -5,8 +5,17 @@ terraform {
   } # Can change from "local" to "gcs" (for google) or "s3" (for aws), if you would like to preserve your tf-state online
   # terraform will not create the bucket, so bucket must be created from CLI/GUI
   required_providers {
+    google-beta = ">=3.8"
     google = {
-      source = "hashicorp/google"
+      version = "~> 4.0.0"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "0.9.1"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "3.2.1"
     }
   }
 }
@@ -19,12 +28,18 @@ provider "google" {
   project = var.project
   region  = var.region
 }
-
+# provider "github" {
+#   token = var.github_token_path # or `GITHUB_TOKEN`
+# }
 provider "google-beta" {
   project = var.project
   region  = var.region
   # alias   = "secret-manager"
 }
+
+provider "null" {
+}
+
 
 ##################################################################################
 # DATA/OUTPUTS
@@ -38,29 +53,20 @@ data "google_project" "project" {
 data "google_compute_default_service_account" "default" {
 }
 
-# output "project_number" {
-#   value = data.google_project.project.number
-# }
+data "terraform_remote_state" "config1" {
+  backend = "gcs"
+  config = {
+    bucket = "z_infra_resources01"
+    # prefix = "terraform/state" #(only use this if you have also configured a prefix path setting up your backend)
+  }
+}
+
 
 ##################################################################################
 # RESOURCES
 ##################################################################################
 
-## Random Suffix 
-### Generate random brief suffix to ensure service-account names are globally unique.
-resource "random_id" "suffix" {
-  byte_length = 2
-}
 
-
-## enable multiple services 
-### note that tf previously had both google_project_service and google_project_service*s*; but services is deprecated
-resource "google_project_service" "project" {
-  for_each = var.list_apis_to_enable
-
-  provider = google-beta
-  service  = each.value
-}
 ##################
 ## Data Warehouse
 ##################
@@ -110,10 +116,10 @@ resource "google_bigquery_table" "external_tables" {
     compression   = "GZIP"
     source_uris   = ["gs://${var.gcs_bucket_name}/${each.value.gcs_path}*.parquet"]
   }
-  time_partitioning {
-    type  = "DAY"
-    field = each.value.partition_field
-  }
+  # time_partitioning { #you cannot partition an external table
+  #   type  = "DAY"
+  #   field = each.value.partition_field
+  # }
   depends_on = [google_bigquery_dataset.nested_datasets]
 }
 
@@ -128,141 +134,58 @@ resource "google_bigquery_table" "external_tables-dev" {
     compression   = "GZIP"
     source_uris   = ["gs://${var.gcs_bucket_name}/${each.value.gcs_path}*.parquet"]
   }
-  time_partitioning {
-    type  = "DAY"
-    field = each.value.partition_field
-  }
+  # time_partitioning { #you cannot partition an external table
+  #   type  = "DAY"
+  #   field = each.value.partition_field
+  # }
   depends_on = [google_bigquery_dataset.nested_datasets_dev]
 }
 
-##################
-## Service Account (If not done via command line.)
-##################
-###  Create accounts, then add roles, then create keys. 
-resource "google_service_account" "sa" {
-  for_each = var.svc_accts_and_roles
 
-  account_id   = "${each.key}-${random_id.suffix.hex}"
-  display_name = "${each.key}-${random_id.suffix.hex}"
-  description  = var.svc_accts_and_roles[each.key]["description"]
-}
+# There are multiple ways of buildning a timer/sleep resource
+# This is more complex than the standard "time provider" but an instructional example of local-exec
+resource "null_resource" "stall_30_seconds" {
+  # for_each = toset(var.list_apis_to_enable)
 
-## Permissions for Service Accounts
-### Loop through roles in each SA's dict/map and apply to SA
-resource "google_project_iam_member" "sa-accounts-iam" {
-  for_each = local.svc_accts_iam_flat
-
-  project = var.project
-  role    = each.value.role_to_apply
-  member  = "serviceAccount:${each.value.svc_acct_to_apply_role_to}-${random_id.suffix.hex}@${var.project}.iam.gserviceaccount.com"
-  # service_account_id = "projects/${var.project}/serviceAccounts/${each.value.svc_acct_to_apply_role_to}-${random_id.suffix.hex}@${var.project}.iam.gserviceaccount.com"
-  depends_on = [google_service_account.sa]
-
-}
-
-## Keys from service accounts
-### only created if create_key flag is true, and if it's NOT the github or cloudrun sa
-resource "google_service_account_key" "mykeys" {
-  for_each = { for key, value in var.svc_accts_and_roles : key => value if value["create_key"] && key != var.sa_for_dbt_clrun }
-  # service_account_id = "${google_service_account.sa[each.key]}"
-  service_account_id = "projects/${var.project}/serviceAccounts/${each.key}-${random_id.suffix.hex}@${var.project}.iam.gserviceaccount.com"
-  depends_on         = [google_project_iam_member.sa-accounts-iam]
-}
-
-### Specific Key for the cloudrun service account
-resource "google_service_account_key" "key_clrn" {
-  # service_account_id = "${google_service_account.sa[each.key]}"
-  service_account_id = "projects/${var.project}/serviceAccounts/${var.sa_for_dbt_clrun}-${random_id.suffix.hex}@${var.project}.iam.gserviceaccount.com"
-  depends_on         = [google_project_iam_member.sa-accounts-iam]
-  key_algorithm      = "KEY_ALG_RSA_2048"
-  private_key_type   = "TYPE_GOOGLE_CREDENTIALS_FILE"
-}
-
-##################
-## Secrets/Secret Manager
-##################
-### Instantiate the secret for our github token (not strictly necessary as it's a public repo)
-resource "google_secret_manager_secret" "github-token-secret" {
-  provider  = google-beta
-  secret_id = "github-token-secret"
-  replication {
-    automatic = true
+  # triggers = {
+  #   svc_id = google_project_service.project[each.key].id
+  # }
+  provisioner "local-exec" {
+    command = <<-EOF
+      sleep 30
+EOF
   }
-}
-
-### Assign value (version) to the secret with secret data
-resource "google_secret_manager_secret_version" "github_token_secret_version" {
-  provider    = google-beta
-  secret      = google_secret_manager_secret.github-token-secret.id
-  secret_data = file(var.github_token_path)
-}
-
-### Instantiate the secret for the cloud run service account to reference
-resource "google_secret_manager_secret" "clrn_secret" {
-  # account_id         = var.sa_for_dbt_clrun
-  # secret_id        = google_service_account.sa[var.sa_for_dbt_clrun-key].id #.email #.service_account.email
-  secret_id = "${var.sa_for_dbt_clrun}-key-clrn-secret-file"
-  replication {
-    automatic = true
-  }
-}
-
-### Assign a value/version to the secret with secret data
-resource "google_secret_manager_secret_version" "clrn_secret_version" {
-  provider    = google-beta
-  secret      = google_secret_manager_secret.clrn_secret.secret_id
-  secret_data = base64encode(google_service_account_key.key_clrn.private_key)
-  depends_on  = [google_secret_manager_secret.clrn_secret]
-}
-
-
-## Specfic to GitHub secret
-### Get the policy data/permissions for a secret accessor under this project
-data "google_iam_policy" "p4sa-secretAccessor" {
-  #dbt-trnsfrm-sa2
-  provider = google-beta
-  binding {
-    role = "roles/secretmanager.secretAccessor"
-    // Here, 123456789 is the Google Cloud project number for my-project-name.
-    # members = ["serviceAccount:service-${output.project_number.value}@gcp-sa-cloudbuild.iam.gserviceaccount.com"]
-    members = ["serviceAccount:service-${data.google_project.project.number}@gcp-sa-cloudbuild.iam.gserviceaccount.com"]
-  }
-}
-
-### Assign that policy data/permissions to the gituhb secret
-resource "google_secret_manager_secret_iam_policy" "policy" {
-  provider    = google-beta
-  secret_id   = google_secret_manager_secret.github-token-secret.secret_id
-  policy_data = data.google_iam_policy.p4sa-secretAccessor.policy_data
 }
 
 ##################
 ## Cloud Build
 ##################
 ### Create a connection in cloudbuild that pulls from github 
-resource "google_cloudbuildv2_connection" "clbd-gh-connection" {
+resource "google_cloudbuildv2_connection" "clbd_gh_connection" {
+  ### As you're troubleshooting other things, this may return Error: `this update would change the connection's installation state from COMPLETE to PENDING_INSTALL_APP`
+  ### You can elither delete at console.cloud.google.com/cloud-build/repositories/2nd-gen  or comment out.
   provider = google-beta
   location = var.region
-  name     = "clbd-gh-connection"
-
+  name     = "clbd_gh_connection"
   github_config {
-    # app_installation_id = 1363010
+    app_installation_id = 37951852
     authorizer_credential {
-      oauth_token_secret_version = google_secret_manager_secret_version.github_token_secret_version.id
+      #   # oauth_token_secret_version = google_secret_manager_secret_version.github_token_secret_version.id
+      oauth_token_secret_version = data.terraform_remote_state.config1.outputs.github_secret_id
     }
   }
+  depends_on = [null_resource.stall_30_seconds]
 }
 
 
 resource "null_resource" "check_cloudbuild_state" {
   triggers = {
-    connection_id = google_cloudbuildv2_connection.clbd-gh-connection.id
+    connection_id = google_cloudbuildv2_connection.clbd_gh_connection.id
   }
-  # until [ $(gcloud cloudbuildv2 connection describe ${self.triggers.connection_id} --format="get(installationState)") == "COMPLETE" ]; do
-
   provisioner "local-exec" {
+    # the [[]] is needed to ask for a new test each time, rather than using the same test again and again
     command = <<-EOF
-      until [[ $(gcloud alpha builds connections describe ${self.triggers.connection_id} --format="get(installationState)") == "COMPLETE" ]]; do
+      until [[ $(gcloud alpha builds connections describe ${self.triggers.connection_id} --format="get(installationState.stage)") == "COMPLETE" ]]; do
         echo "waiting for installation to complete..."
         sleep 5
       done
@@ -271,63 +194,68 @@ EOF
 }
 
 ### Create a gcp repo for the github repo to be pulled into
-resource "google_cloudbuildv2_repository" "gh-transform-repo" {
+resource "google_cloudbuildv2_repository" "gh_transform_repo" {
   provider          = google-beta
   location          = var.region
   name              = var.cloud_build_repo_name
-  parent_connection = google_cloudbuildv2_connection.clbd-gh-connection.name
+  parent_connection = google_cloudbuildv2_connection.clbd_gh_connection.name
   remote_uri        = var.github_repo_path
   depends_on        = [null_resource.check_cloudbuild_state]
-  # depends_on        = [google_cloudbuildv2_connection.clbd-gh-connection] #despite appearances, this does not work as it doesn't check for state of connection
+  # depends_on        = [google_cloudbuildv2_connection.clbd-gh-connection] #despite appearances, this does not work as it doesn't check for *state* of connection
 }
 
-## Create a trigger thatruns cloudbuild anytime an update is made to the gcp repo, which itself is updated based on changes to the main github brand
+## Create a trigger thatruns cloudbuild anytime an update is made to the gcp cloud build repo, which itself is updated based on changes to the main github brand
 resource "google_cloudbuild_trigger" "cloud_bld_trigger" {
   name        = "cloud-bld-trigger"
   description = "Trigger for building and deploying Cloud Run service"
+  provider    = google-beta
   trigger_template {
-    branch_name = "main"
+    branch_name = "^main$"
     repo_name   = var.cloud_build_repo_name
     project_id  = data.google_project.project.project_id
-    # tag_name    = "ghcr.io/dbt-labs/dbt-bigquery"
   }
   build {
     step {
-      name = "ghcr.io/dbt-labs/dbt-bigquery"
+      name = "gcr.io/cloud-builders/docker"
+      dir  = "dbt/nycitibike_transform/." // or specify the directory where Dockerfile is located if it's not in the root
+      args = ["build", "-t", "gcr.io/${data.google_project.project.project_id}/dbt-latest:v0", "."]
+    }
+    step {
+      name = "gcr.io/cloud-builders/docker"
+      args = ["sleep", "50"]
+    }
+    step {
+      name = "gcr.io/cloud-builders/docker"
+      args = ["push", "gcr.io/${data.google_project.project.project_id}/dbt-latest:v0"]
     }
     substitutions = {
-      _BRANCH_NAME = "main"
+      _BRANCH_NAME = "^main$"
     }
   }
+  depends_on = [null_resource.stall_30_seconds]
 }
+
 ##################
 ## Cloud Run
 ##################
+
 ### create a cloud run service that pulls the dbt-bigquery image and runs it using permissions contained in the cloud run service account/secret
-resource "google_cloud_run_service" "dbt_clrn_service" {
+# resource "google_cloud_run_service" "dbt_clrn_service" {
+resource "google_cloud_run_v2_service" "dbt_clrn_service" {
+  provider = google-beta
   name     = var.cloud_run_service_name
   location = var.region
-
   template {
-    spec {
-      service_account_name = google_service_account.sa[var.sa_for_dbt_clrun].name
-      containers {
-        image = "ghcr.io/dbt-labs/dbt-bigquery"
-        env {
-          value_from {
-            secret_key_ref {
-              key  = google_secret_manager_secret_version.clrn_secret_version.id
-              name = google_secret_manager_secret_version.clrn_secret_version.name
-            }
-          }
-        }
-      }
+    service_account = data.terraform_remote_state.config1.outputs.clrn_service_account
+    containers {
+      image = "gcr.io/${data.google_project.project.project_id}/dbt-latest:v0"
     }
   }
-  traffic {
-    percent         = 100
-    latest_revision = true
-  }
+  depends_on = [google_cloudbuild_trigger.cloud_bld_trigger]
+  # traffic { #100%/latest_revision=true are defaults)
+  #   percent         = 100
+  #   latest_revision = true
+  # }
 }
 
 ##################
@@ -340,6 +268,7 @@ resource "google_cloud_scheduler_job" "job" {
   schedule         = "* */4 * * *"
   time_zone        = "America/New_York"
   attempt_deadline = "320s"
+  provider         = google-beta
 
   retry_config {
     retry_count = 1
@@ -347,7 +276,8 @@ resource "google_cloud_scheduler_job" "job" {
 
   http_target {
     http_method = "GET"
-    uri         = google_cloud_run_service.dbt_clrn_service.status[0].url
+    # uri         = google_cloud_run_v2_service.dbt_clrn_service.status[0].url
+    uri = google_cloud_run_v2_service.dbt_clrn_service.uri
     oidc_token {
       service_account_email = data.google_compute_default_service_account.default.email
     }
@@ -355,12 +285,12 @@ resource "google_cloud_scheduler_job" "job" {
 }
 
 
-# # resource "google_artifact_registry_repository" "my-repo" {
-# #   location      = var.region
-# #   repository_id = var.registry_repo_name
-# #   description   = var.repo_description
-# #   format        = var.repo_format
-# # }
+# resource "google_artifact_registry_repository" "my-repo" {
+#   location      = var.region
+#   repository_id = var.registry_repo_name
+#   description   = var.repo_description
+#   format        = var.repo_format
+# }
 
 
 # # resource "google_compute_resource_policy" "gce_schedule" {

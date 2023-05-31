@@ -3,6 +3,11 @@
 project = "sbh-nycitibike-pipeline-main"
 region  = "us-central1"
 
+# list_apis_to_enable = ["secretmanager.googleapis.com"
+#   , "cloudbuild.googleapis.com"
+#   , "cloudscheduler.googleapis.com"
+# ]
+
 # Service Accounts and Roles
 # map/dict with key service-account name and values map/dict of description and list of roles to be assigned
 # EG :     = {"generic-primary-svc-acct" = {
@@ -11,7 +16,6 @@ region  = "us-central1"
 #                           }
 #          ... }
 
-list_apis_to_enable = ["secretmanager.googleapis.com", "cloudbuild.googleapis.com", "cloudscheduler.googleapis.com"]
 
 svc_accts_and_roles = {
   "dbt-trnsfrm-sa2" = {
@@ -73,7 +77,7 @@ sa_for_dbt_clrun         = "dbt-trnsfrm-sa2"
 cloud_run_service_name   = "sbh-nycitibike-transform-cr-dbtservice-usc1-p01"
 cloud_run_container_path = ""
 
-github_token_path     = "../secrets/dbt_pat.txt"
+github_token_path     = "../../secrets/alt_pat.txt"
 cloud_build_repo_name = "sbh-nycitibike-transform-cb-repogh-usc1-p01"
 github_repo_path      = "https://github.com/juicero-chief-juice-officer/nycitibike-data-transform.git"
 

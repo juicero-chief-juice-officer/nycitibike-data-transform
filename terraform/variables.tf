@@ -22,13 +22,12 @@ locals {
   ]...)
 }
 
-variable "list_apis_to_enable" {
-  type        = set(string)
-  description = "Any APIs you want to ensure are enabled."
-  default     = []
-}
-# variable "project_number_out" {
-
+## NOTE!
+# This is not used, and only remains for reference. 
+# variable "list_apis_to_enable" {
+#   type        = set(string)
+#   description = "Any APIs you want to ensure are enabled."
+#   default     = []
 # }
 
 variable "gcs_bucket_name" {
