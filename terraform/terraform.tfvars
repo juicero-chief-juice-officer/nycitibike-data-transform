@@ -3,6 +3,8 @@
 project = "sbh-nycitibike-pipeline-main"
 region  = "us-central1"
 
+## NOTE!
+# This is not used, and only remains for reference. 
 # list_apis_to_enable = ["secretmanager.googleapis.com"
 #   , "cloudbuild.googleapis.com"
 #   , "cloudscheduler.googleapis.com"
@@ -35,8 +37,10 @@ svc_accts_and_roles = {
     secret_access = false
     roles = [
       "roles/run.invoker"
+      # , "roles/storage.admin"
       , "roles/iam.serviceAccountUser"
       , "roles/run.serviceAgent"
+      # , "roles/run.admin"
     ]
   }
 
@@ -82,7 +86,7 @@ cloud_build_repo_name = "sbh-nycitibike-transform-cb-repogh-usc1-p01"
 github_repo_path      = "https://github.com/juicero-chief-juice-officer/nycitibike-data-transform.git"
 
 #Artifact registry
-registry_repo_name = "sbh-nycitibike-transform-ar-vmrepo-usc1-p01"
+registry_repo_name = "xxxxxxxxsbh-nycitibike-transform-ar-vmrepo-usc1-p01xxxxxx"
 repo_description   = "For docker image which will run dbt"
 repo_format        = "DOCKER"
 

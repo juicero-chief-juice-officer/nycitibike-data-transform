@@ -5,6 +5,11 @@ sa_keys/*
 secrets/*
 
 
+target/
+dbt_packages/
+logs/
+
+
 
 #### Terraform
 #### from https://github.com/github/gitignore/blob/main/Terraform.gitignore
