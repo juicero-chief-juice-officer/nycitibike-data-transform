@@ -83,10 +83,37 @@ EOF
   }
 }
 
+
+# resource "null_resource" "check_cloudbuild_state" {
+#   triggers = {
+#     connection_id = google_cloudbuildv2_connection.clbd_gh_connection.id
+#   }
+#   provisioner "local-exec" {
+#     # the [[]] is needed to ask for a new test each time, rather than using the same test again and again
+#     command = <<-EOF
+#       until [[ $(gcloud alpha builds connections describe ${self.triggers.connection_id} --format="get(installationState.stage)") == "COMPLETE" ]]; do
+#         echo "waiting for installation to complete..."
+#         sleep 5
+#       done
+# EOF
+#   }
+# }
+
+
+resource "google_artifact_registry_repository" "cb_ar_repo" {
+  provider = google-beta
+  location = var.region
+  # repository_id = "gcr.io"
+  repository_id = var.cloud_build_repo_name
+  description   = var.repo_description
+  format        = var.repo_format
+}
+
+
 ##################
 ## Cloud Build
 ##################
-### Create a connection in cloudbuild that pulls from github 
+## Create a connection in cloudbuild that pulls from github 
 resource "google_cloudbuildv2_connection" "clbd_gh_connection" {
   ### As you're troubleshooting other things, this may return Error: `this update would change the connection's installation state from COMPLETE to PENDING_INSTALL_APP`
   ### You can elither delete at console.cloud.google.com/cloud-build/repositories/2nd-gen  or comment out.
@@ -96,103 +123,233 @@ resource "google_cloudbuildv2_connection" "clbd_gh_connection" {
   github_config {
     app_installation_id = 37951852
     authorizer_credential {
-      #   # oauth_token_secret_version = google_secret_manager_secret_version.github_token_secret_version.id
       oauth_token_secret_version = data.terraform_remote_state.config1.outputs.github_secret_id
     }
   }
-  depends_on = [null_resource.stall_30_seconds]
+  # depends_on = [null_resource.stall_30_seconds]
 }
-
-resource "google_artifact_registry_repository" "cb_ar_repo" {
-  provider      = google-beta
-  location      = var.region
-  repository_id = "${var.cloud_build_repo_name}-xx"
-  # repository_id = var.cloud_build_repo_name
-  description = var.repo_description
-  format      = var.repo_format
-}
-
 
 ## Create a gcp repo for the github repo to be pulled into
 resource "google_cloudbuildv2_repository" "gh_transform_repo" {
   provider = google-beta
-  # location = "us-central1-docker.pkg.dev/${data.google_project.project.project_id}/${var.cloud_build_repo_name}"
-  # us-central1-docker.pkg.dev/sbh-nycitibike-pipeline-main/sbh-nycitibike-transform-cb-repogh-usc1-p01
+  # location = "gcr.io/${data.google_project.project.project_id}/${var.cloud_build_repo_name}"
+  # gcr.io/sbh-nycitibike-pipeline-main/sbh-nycitibike-transform-cb-repogh-usc1-p01
   location          = var.region
   name              = var.cloud_build_repo_name
   parent_connection = google_cloudbuildv2_connection.clbd_gh_connection.name
   remote_uri        = var.github_repo_path
-  depends_on        = [null_resource.check_cloudbuild_state]
+  # depends_on        = [null_resource.check_cloudbuild_state]
   # depends_on        = [google_cloudbuildv2_connection.clbd-gh-connection] #despite appearances, this does not work as it doesn't check for *state* of connection
 }
 
-resource "null_resource" "check_cloudbuild_state" {
-  triggers = {
-    connection_id = google_cloudbuildv2_connection.clbd_gh_connection.id
-  }
-  provisioner "local-exec" {
-    # the [[]] is needed to ask for a new test each time, rather than using the same test again and again
-    command = <<-EOF
-      until [[ $(gcloud alpha builds connections describe ${self.triggers.connection_id} --format="get(installationState.stage)") == "COMPLETE" ]]; do
-        echo "waiting for installation to complete..."
-        sleep 5
-      done
-EOF
-  }
-}
+# resource "google_cloudbuild_trigger" "cloud_bld_trigger2" {
+#   name        = "cloud-bld-trigger2"
+#   description = "Trigger specifying filename and repository_event_config"
+#   provider    = google-beta
+#   location    = var.region
+#   filename    = "Dockerfile"
+#   repository_event_config {
+#     repository = google_cloudbuildv2_repository.gh_transform_repo.id #"sbh-nycitibike-transform-cb-repogh-usc1-p01"
+#     push { branch = "^main$" }
+#   }
+# }
+
+# resource "google_cloudbuild_trigger" "cloud_bld_trigger5" {
+#   name        = "cloud-bld-trigger5"
+#   description = "Trigger specifying filename and trigger_template"
+#   provider    = google-beta
+#   location    = var.region
+#   filename    = "Dockerfile"
+#   trigger_template {
+#     repo_name   = google_cloudbuildv2_repository.gh_transform_repo.name
+#     project_id  = data.google_project.project.project_id
+#     branch_name = "main"
+#   }
+# }
+# resource "google_cloudbuild_trigger" "cloud_bld_trigger6" {
+#   name        = "cloud-bld-trigger6"
+#   description = "Trigger specifying filename and github"
+#   provider    = google-beta
+#   location    = var.region
+#   filename    = "Dockerfile"
+#   github {
+#     owner = "juicero-chief-juice-officer"
+#     name  = "nycitibike-data-transform"
+#     # name = element(split(element(split(var.github_repo_path, "/"), 4), "."), 0)
+#     # repo_name   = google_cloudbuildv2_repository.gh_transform_repo.id
+#     push { branch = "^main$" }
+#   }
+# }
 
 
 
-resource "google_cloudbuild_trigger" "cloud_bld_trigger" {
-  name        = "cloud-bld-trigger"
-  description = "Trigger for building and deploying Cloud Run service"
+
+# resource "google_cloudbuild_trigger" "cloud_bld_trigger3" {
+#   name        = "cloud-bld-trigger3"
+#   description = "Trigger with repository_event_config and filename"
+#   provider    = google-beta
+#   location    = var.region
+#   filename    = "Dockerfile"
+#   repository_event_config {
+#     repository = google_cloudbuildv2_repository.gh_transform_repo.id
+#     push {
+#       branch = "^main$"
+#     }
+#   }
+# }
+
+resource "google_cloudbuild_trigger" "cloud_bld_trigger7" {
+  name        = "cloud-bld-trigger7"
+  description = "Trigger with repository_event_config and build"
   provider    = google-beta
   location    = var.region
-  # filename    = "dbt/nycitibike_transform/Dockerfile"
-  trigger_template {
-    repo_name   = google_cloudbuildv2_repository.gh_transform_repo.name
-    project_id  = data.google_project.project.project_id
-    branch_name = "main"
+  # filename    = "Dockerfile"
+  repository_event_config {
+    repository = google_cloudbuildv2_repository.gh_transform_repo.id
+    push {
+      branch = "^main$"
+    }
   }
-  # repository_event_config {
-  #   repository = google_cloudbuildv2_repository.gh_transform_repo.id
-  #   push {
-  #     branch = "main"
-  #   }
-  # }
-  # git_file_source {
-  #   path      = "dbt/nycitibike_transform"
-  #   repo_type = "GITHUB" #"CLOUD_SOURCE_REPOSITORIES"
-  # }
-  # github {
-  #   owner = "juicero-chief-juice-officer"
-  #   name  = "nycitibike-data-transform"
-  #   # name = element(split(element(split(var.github_repo_path, "/"), 4), "."), 0)
-  #   # repo_name   = google_cloudbuildv2_repository.gh_transform_repo.id
-  #   push { branch = "main" }
-  # }
   build {
+    images = ["gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA"]
+    options {
+      logging = "CLOUD_LOGGING_ONLY"
+    }
     step {
-      name = "us-central1-docker.pkg.dev/cloud-builders/docker"
-      dir  = "dbt/nycitibike_transform" // or specify the directory where Dockerfile is located if it's not in the root
-      args = ["build", "-t", "us-central1-docker/${data.google_project.project.project_id}/dbt-latest:v0", "."]
-      # args = ["build -t us-central1-docker.pkg.dev/${data.google_project.project.project_id}/dbt-latest:v0 ."]
+      name = "gcr.io/cloud-builders/docker"
+      args = ["build", "-t", "gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA", "-f", "Dockerfile", "."]
     }
     # step {
-    #   name = "us-central1-docker.pkg.dev/cloud-builders/docker"
-    #   args = ["sleep", "50"]
+    #   name = "gcr.io/cloud-builders/docker"
+    #   args = ["push", "gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA"]
     # }
-    step {
-      name = "us-central1-docker.pkg.dev/cloud-builders/docker"
-      dir  = "dbt/nycitibike_transform" // or specify the directory where Dockerfile is located if it's not in the root
-      args = ["push", "us-central1-docker.pkg.dev/${data.google_project.project.project_id}/dbt-latest:v0"]
-    }
     substitutions = {
       _BRANCH_NAME = "^main$"
     }
   }
-  depends_on = [null_resource.stall_30_seconds]
 }
+
+# # resource "google_cloudbuild_trigger" "cloud_bld_trigger9" {
+# #   name        = "cloud-bld-trigger9"
+# #   description = "Trigger with trigger_template and github"
+# #   provider    = google-beta
+# #   location    = var.region
+# #   filename = 
+# #   trigger_template {
+# #     repo_name   = google_cloudbuildv2_repository.gh_transform_repo.name
+# #     project_id  = data.google_project.project.project_id
+# #     branch_name = "main"
+# #   }
+# # }
+
+# resource "google_cloudbuild_trigger" "cloud_bld_trigger4" {
+#   name        = "cloud-bld-trigger4"
+#   description = "Trigger with trigger_template and github_file_source block"
+#   provider    = google-beta
+#   location    = var.region
+#   trigger_template {
+#     repo_name   = google_cloudbuildv2_repository.gh_transform_repo.name
+#     project_id  = data.google_project.project.project_id
+#     branch_name = "main"
+#   }
+#   git_file_source {
+#     # name      = "nycitibike-data-transform"
+#     path      = "Dockerfile"
+#     repo_type = "GITHUB"
+#     # repository =  If unspecified, the repo from which the trigger invocation originated is assumed to be the repo from which to read the specified path
+#     # name = element(split(element(split(var.github_repo_path, "/"), 4), "."), 0)
+#     # repo_name   = google_cloudbuildv2_repository.gh_transform_repo.id
+#   }
+#   # repository_event_config {
+#   #   repository = google_cloudbuildv2_repository.gh_transform_repo.id
+#   #   push {
+#   #     branch = "^main$"
+#   #   }
+#   # }
+# }
+# resource "google_cloudbuild_trigger" "cloud_bld_trigger" {
+#   name        = "cloud-bld-trigger"
+#   description = "Trigger with github and build blocks"
+#   provider    = google-beta
+#   location    = var.region
+#   github {
+#     owner = "juicero-chief-juice-officer"
+#     name  = "nycitibike-data-transform"
+#     # name = element(split(element(split(var.github_repo_path, "/"), 4), "."), 0)
+#     # repo_name   = google_cloudbuildv2_repository.gh_transform_repo.id
+#     push { branch = "^main$" }
+#   }
+#   build {
+#     # cd dbt/nycitibike-transform/ && docker build \
+#     # -t gcr.io/sbh-nycitibike-pipeline-main/github.com/juicero-chief-juice-officer/nycitibike-data-transform:$COMMIT_SHA \
+#     # -f Dockerfile \
+#     # .
+#     images = ["gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA"]
+#     options {
+#       logging = "CLOUD_LOGGING_ONLY"
+#     }
+#     step {
+#       name = "gcr.io/cloud-builders/docker"
+#       args = ["build", "-t", "gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA", "-f", "Dockerfile", "."]
+#     }
+#     substitutions = {
+#       _BRANCH_NAME = "^main$"
+#     }
+#   }
+#   depends_on = [null_resource.stall_30_seconds]
+# }
+# trigger_template {
+#   # repo_name  = google_cloudbuildv2_repository.gh_transform_repo.name
+#   repo_name = var.cloud_build_repo_name
+#   # repo_name  = var.cloud_build_repo_name
+#   project_id = data.google_project.project.project_id
+#   # dir  = "dbt/nycitibike_transform"
+#   branch_name = "main"
+# }
+# service_account = "projects/${data.google_project.project.project_id}/serviceAccounts/${data.terraform_remote_state.config1.outputs.clrn_service_account}"
+# filename    = "dbt/nycitibike_transform/Dockerfile"
+# trigger_template {
+#   # repo_name  = google_cloudbuildv2_repository.gh_transform_repo.name
+#   repo_name = var.github_repo_path
+#   # repo_name  = var.cloud_build_repo_name
+#   project_id = data.google_project.project.project_id
+#   # dir  = "dbt/nycitibike_transform"
+#   branch_name = "main"
+# }
+# # step {
+# #   name = "gcr.io/cloud-builders/docker"
+# #   # name = "gcr.io/cloud-builders/docker"
+# #   # entrypoint = "bash"
+# #   args = ["gcloud", "auth", "configure-docker", "gcr.io"]
+# # }
+# step {
+#   name = "gcr.io/cloud-builders/docker"
+#   # dir  = "dbt/nycitibike_transform" // or specify the directory where Dockerfile is located if it's not in the root
+#   args = ["build", "-t", "dbt-latest:v0", "."]
+#   # args = ["build", "-t", "gcr.io/${data.google_project.project.project_id}/dbt-latest:v0", "."]
+#   # args = ["build -t gcr.io/${data.google_project.project.project_id}/dbt-latest:v0 ."]
+# }
+# # step {
+# #   name = "gcr.io/cloud-builders/docker"
+# #   args = ["sleep", "50"]
+# # }
+# step {
+#   name = "gcr.io/cloud-builders/docker"
+#   args = ["docker", "tag", "dbt-latest:v0", "gcr.io/${data.google_project.project.project_id}/${google_cloudbuildv2_repository.gh_transform_repo.name}/dbt-latest:v0"]
+# }
+# step {
+#   name = "gcr.io/cloud-builders/docker"
+#   # dir  = "dbt/nycitibike_transform" // or specify the directory where Dockerfile is located if it's not in the root
+#   args = ["push", "gcr.io/${data.google_project.project.project_id}/${google_cloudbuildv2_repository.gh_transform_repo.name}/dbt-latest:v0"]
+# }
+# }
+
+# }
+# git_file_source {
+#   path      = "dbt/nycitibike_transform"
+#   repo_type = "GITHUB" #"CLOUD_SOURCE_REPOSITORIES"
+# }
+
 
 # ##################
 # ## Cloud Run
@@ -211,14 +368,17 @@ resource "google_cloud_run_v2_service" "dbt_clrn_service" {
   template {
     service_account = data.terraform_remote_state.config1.outputs.clrn_service_account
     containers {
-      image = "us-central1-docker.pkg.dev/${data.google_project.project.project_id}/dbt-latest:v0"
+      # image = google_artifact_registry_repository.cb_ar_repo.name
+      # image = "gcr.io/${data.google_project.project.project_id}/${google_cloudbuildv2_repository.gh_transform_repo.name}:latest"
+      # image = "gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA"
+      image = "gcr.io/${data.google_project.project.project_id}/${google_cloudbuildv2_repository.gh_transform_repo.name}"
     }
   }
-  depends_on = [google_cloudbuild_trigger.cloud_bld_trigger]
+  depends_on = [google_cloudbuild_trigger.cloud_bld_trigger7]
   # depends_on = [google_cloudbuild_trigger.example_trigger]
   # traffic { #100%/latest_revision=true are defaults)
-  #   percent         = 100
-  #   latest_revision = true
+  #   percent = 100
+  #   # latest_revision = true
   # }
 }
 
