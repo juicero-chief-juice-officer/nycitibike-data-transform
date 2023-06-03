@@ -217,7 +217,7 @@ resource "google_cloudbuild_trigger" "cloud_bld_trigger7" {
     }
     step {
       name = "gcr.io/cloud-builders/docker"
-      args = ["build", "-t", "gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA", "-f", "Dockerfile", "."]
+      args = ["build", "-t", "gcr.io/sbh-nycitibike-pipeline-main/sbh-nycitibike-transform-cb-repogh-usc1-p01:$COMMIT_SHA", "-f", "Dockerfile", "."]
     }
     # step {
     #   name = "gcr.io/cloud-builders/docker"
@@ -229,6 +229,7 @@ resource "google_cloudbuild_trigger" "cloud_bld_trigger7" {
   }
 }
 
+# ["build", "-t", "gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA", "-f", "Dockerfile", "."]
 # # resource "google_cloudbuild_trigger" "cloud_bld_trigger9" {
 # #   name        = "cloud-bld-trigger9"
 # #   description = "Trigger with trigger_template and github"
@@ -280,10 +281,11 @@ resource "google_cloudbuild_trigger" "cloud_bld_trigger7" {
 #     push { branch = "^main$" }
 #   }
 #   build {
-#     # cd dbt/nycitibike-transform/ && docker build \
-#     # -t gcr.io/sbh-nycitibike-pipeline-main/github.com/juicero-chief-juice-officer/nycitibike-data-transform:$COMMIT_SHA \
-#     # -f Dockerfile \
-#     # .
+#     # cd dbt/nycitibike-transform/ && 
+# docker build \
+#     -t gcr.io/sbh-nycitibike-pipeline-main/github.com/juicero-chief-juice-officer/nycitibike-data-transform:$COMMIT_SHA \
+#     -f Dockerfile \
+#     .
 #     images = ["gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA"]
 #     options {
 #       logging = "CLOUD_LOGGING_ONLY"
