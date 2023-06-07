@@ -1,24 +1,23 @@
-nycitibike_transform:  #profile name from dbt_project.yml
-  target: dev  # your development environment
+default: &default
+  type: bigquery
+  method: service-account
+  project: sbh-nycitibike-pipeline-main
+  threads: 4
+  timeout_seconds: 300
+  priority: interactive
+  retries: 1
+
+nycitibike_transform:
+  target: DEV
   outputs:
-    dev:
-      type: bigquery
-      method: service-account
-      project: sbh-nycitibike-pipeline-main  # name of the GCP project in BigQuery (project variable from terraform)
-      # dataset: gbqdwh_rides  # dataset name from data-pipeline terraform (bq_dataset variable)
-      threads: 4
-      keyfile: /secrets/dbt-trnsfrm-sa2-key-clrn-secret-file"
-      timeout_seconds: 300
-      priority: interactive
-      retries: 1
-    
-    prod: # your production environment
-      type: bigquery
-      method: service-account
-      project: sbh-nycitibike-pipeline-main  # name of the project in BigQuery
-      # dataset: dbt_production  # your dataset for production
-      threads: 4
-      keyfile: /secrets/dbt-trnsfrm-sa2-key-clrn-secret-file"
-      timeout_seconds: 300
-      priority: interactive
-      retries: 1
+    DEV:
+      <<: *default
+      schema: "DEV"
+      keyfile: "../../secrets/dbt-trnsfrm-sa2-key-clrn-secret-file.json"
+      # dataset: GBQDWH_RIDES
+    AA:
+      <<: *default
+      schema: "AA"
+      keyfile:
+          env_var: DBT_SA_CREDS
+      # dataset: DEV_GBQDWH_RIDES
