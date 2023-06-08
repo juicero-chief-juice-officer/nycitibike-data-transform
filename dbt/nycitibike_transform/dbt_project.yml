@@ -16,23 +16,30 @@ clean-targets:
 models:
   nycitibike_transform:
     1_SRC___NYCITIBIKE:
-      # +schema: "1_SRC___NYCITIBIKE"
-      +schema: "{{ 'DEV_' if target.name == 'dev' else '' }}1_SRC___NYCITIBIKE"
+      +schema: "1_SRC___NYCITIBIKE"
+      # schema: "{{ '1_SRC___NYCITIBIKE' if 1 == 1 else 'xxxxxxxxx' }}"
+      # +schema: "{{ 'x' if target.name == 'DEV' else '' }}1_SRC___NYCITIBIKE"
     1_SRC___AUX_TLC:
-      # +schema: "1_SRC___AUX_TLC"
-      +schema: "{{ 'DEV_' if target.name == 'dev' else '' }}1_SRC___AUX_TLC"
+      +schema: "1_SRC___AUX_TLC"
+      # schema: "{{ '1_SRC___AUX_TLC' if 1 == 1 else 'xxxxxxxxx' }}"
+      # +schema: "{{ 'x' if target.name == 'DEV' else '' }}1_SRC___AUX_TLC"
     2_STG___AUX_TLC:
-      # +schema: "2_STG___AUX_TLC"
-      +schema: "{{ 'DEV_' if target.name == 'dev' else '' }}2_STG___AUX_TLC"
+      +schema: "2_STG___AUX_TLC"
+      # schema: "{{ '2_STG___AUX_TLC' if 1 == 1 else 'xxxxxxxxx' }}"
+      # +schema: "{{ 'x' if target.name == 'DEV' else '' }}2_STG___AUX_TLC"
     2_STG___NYCITIBIKE:
-      # +schema: "2_STG___NYCITIBIKE"
-      +schema: "{{ 'DEV_' if target.name == 'dev' else '' }}2_STG___NYCITIBIKE"
+      +schema: "2_STG___NYCITIBIKE"
+      # schema: "{{ '2_STG___NYCITIBIKE' if 1 == 1 else 'xxxxxxxxx' }}"
+      # +schema: "{{ 'x' if target.name == 'DEV' else '' }}2_STG___NYCITIBIKE"
     2_DIM___AUX_TLC:
-      # +schema: "2_DIM___AUX_TLC"
-      +schema: "{{ 'DEV_' if target.name == 'dev' else '' }}2_DIM___AUX_TLC"
+      +schema: "2_DIM___AUX_TLC"
+      # schema: "{{ '2_DIM___AUX_TLC' if 1 == 1 else 'xxxxxxxxx' }}"
+      # +schema: "{{ 'x' if target.name == 'DEV' else '' }}2_DIM___AUX_TLC"
     3_PREP:
-      # +schema: "3_PREP"
-      +schema: "{{ 'DEV_' if target.name == 'dev' else '' }}3_PREP"
+      +schema: "3_PREP"
+      # schema: "{{ '3_PREP' if target.name if 1 == 1 else 'xxxxxxxxx' }}"
+      # +schema: "{{ 'x' if target.name == 'DEV' else '' }}3_PREP"
     4_MART:
-      # +schema: "4_MART"
-      +schema: "{{ 'DEV_' if target.name == 'dev' else '' }}4_MART"
+      +schema: "4_MART"
+      # schema: "{{ '4_MART' if target.name if 1 == 1 else 'xxxxxxxxx' }}"
+      # +schema: "{{ 'x' if target.name == 'DEV' else '' }}4_MART"

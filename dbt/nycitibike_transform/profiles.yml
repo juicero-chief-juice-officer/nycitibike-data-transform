@@ -2,6 +2,7 @@ default: &default
   type: bigquery
   method: service-account
   project: sbh-nycitibike-pipeline-main
+  location: us-central1
   threads: 4
   timeout_seconds: 300
   priority: interactive
@@ -15,9 +16,9 @@ nycitibike_transform:
       schema: "DEV"
       keyfile: "../../secrets/dbt-trnsfrm-sa2-key-clrn-secret-file.json"
       # dataset: GBQDWH_RIDES
-    AA:
+    PROD:
       <<: *default
-      schema: "AA"
+      schema: "CORE"
       keyfile:
           env_var: DBT_SA_CREDS
       # dataset: DEV_GBQDWH_RIDES
