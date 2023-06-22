@@ -3,8 +3,10 @@
 *gcp_key.json
 sa_keys/*
 secrets/*
+secrets/
 
-
+tests/*
+tests/
 target/
 dbt_packages/
 logs/

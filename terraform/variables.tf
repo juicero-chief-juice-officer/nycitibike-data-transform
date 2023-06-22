@@ -36,13 +36,17 @@ variable "gcs_bucket_name" {
   default     = "tmp-unknown-datalake-bucket"
 }
 
+variable "datasets_to_create" {
+  description = "List of datasets to create. Any tables created in `external_tables_to_create` must be included here."
+  type        = list(string)
+}
+
 variable "external_tables_to_create" {
   description = "Map of external tables to create"
   type = map(object({
-    gcs_path        = string
-    dataset         = string
-    table_name      = string
-    partition_field = string
+    gcs_path   = string
+    dataset    = string
+    table_name = string
   }))
 }
 
@@ -101,11 +105,11 @@ variable "github_repo_path" {
 #   default     = "STANDARD"
 # }
 
-# variable "bq_dataset" {
-#   description = "BigQuery Dataset that raw data (from GCS) will be written to"
-#   type        = string
-#   default     = "gbqdwh_source_data"
-# }
+variable "bq_dataset" {
+  description = "BigQuery Dataset that raw data (from GCS) will be written to"
+  type        = string
+  default     = "gbqdwh_source_data"
+}
 
 
 ##

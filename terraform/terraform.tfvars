@@ -1,4 +1,3 @@
-#RENAME THIS AS `terraform.tfvars`
 #GCP settings
 project = "sbh-nycitibike-pipeline-main"
 region  = "us-central1"
@@ -45,34 +44,45 @@ svc_accts_and_roles = {
   }
 
 }
+# SQL naming convention
+# Triple underscore (`___`) is used exclusively to separate the dataset type from the dataset name.
+#   This lets us, essentially, nest a second layer in between project_name and table_name
+#   We use triple because it is so obvious (and inconvenient) as to be memorable
+# Lowercase letters are only used to separate dataset sub-types, specifically `2x_DIM`
+
+datasets_to_create = [
+  "1_SRC___NYCITIBIKE"
+  , "1_SRC___AUX_TLC"
+  , "2_STG___NYCITIBIKE"
+  , "2_STG___AUX_TLC"
+  , "2_DIM___AUX_TLC"
+  , "3_PREP"
+  , "4_MART"
+]
 
 external_tables_to_create = {
   "raw_citibike_rides" = {
-    gcs_path        = "data/"
-    dataset         = "1_SRC_NYCITIBIKE"
-    table_name      = "TRIPS"
-    partition_field = "started_at"
+    gcs_path   = "data/"
+    dataset    = "1_SRC___NYCITIBIKE"
+    table_name = "TRIPS"
+    # filename_regex  = ""
   }
   "aux_raw_fhv_green" = {
-    gcs_path        = "aux_data/for_hire_vehicle_trips/green/"
-    dataset         = "1_SRC_AUX_TLC_GREEN_RIDES"
-    table_name      = "RIDES"
-    partition_field = "lpep_pickup_datetime"
+    gcs_path   = "aux_data/tlc_trips/green/"
+    dataset    = "1_SRC___AUX_TLC"
+    table_name = "RIDES_GREEN"
   }
   "aux_raw_fhv_yellow" = {
-    gcs_path        = "aux_data/for_hire_vehicle_trips/yellow/"
-    dataset         = "1_SRC_AUX_TLC_YELLOW_RIDES"
-    table_name      = "RIDES"
-    partition_field = "tpep_pickup_datetime"
+    gcs_path   = "aux_data/tlc_trips/yellow/"
+    dataset    = "1_SRC___AUX_TLC"
+    table_name = "RIDES_YELLOW"
   }
   "aux_raw_fhv_fhv" = {
-    gcs_path        = "aux_data/for_hire_vehicle_trips/fhv/"
-    dataset         = "1_SRC_AUX_TLC_FHV_RIDES"
-    table_name      = "RIDES"
-    partition_field = "Pickup_datetime"
+    gcs_path   = "aux_data/tlc_trips/fhv/"
+    dataset    = "1_SRC___AUX_TLC"
+    table_name = "RIDES_FHV"
   }
 }
-
 
 sa_for_github = "dbt-trnsfrm-sa2"
 
@@ -97,5 +107,5 @@ gcs_bucket_name = "sbh-nycitibike-pipeline-gcsdlb-rides-p01"
 # # gcs_storage_class = "STANDARD"
 
 # --Created in previous project--
-# #Data Warehouse BigQuery
-# bq_dataset = "gbqdwh_rides"
+#Data Warehouse BigQuery
+bq_dataset = "gbqdwh_rides"
