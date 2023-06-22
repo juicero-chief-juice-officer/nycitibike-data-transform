@@ -1,0 +1,41 @@
+﻿column_name,code,units,description,format
+Court Index Number,,Number,"Number assigned by the court that has jurisdiction over the landlord/tenant proceedings. \n
+Expected values: {N/A}",STRING
+Docket Number ,,Number,"Number assigned by the City Marshal upon case intake. \n
+Expected values: {N/A}",STRING
+Eviction Address,,Plain Text,"Identifies the street and building number where an eviction is pending or has been completed.\n
+Expected values: {N/A}",STRING
+Eviction Apartment Number,,Plain Text ,"Identifies the unit within the building where an eviction is pending or has been completed. \n
+Expected values: {N/A}",STRING
+Executed Date,,Date,"The date that an eviction has been executed. \n
+Expected values: {N/A}",STRING
+Marshal First Name,,Plain Text,"Identifies the first name of the NYC Marshal who performed the eviction or who is scheduled to perform the eviction. \n
+Expected values: {N/A}",STRING
+Marshal Last Name,,Plain Text,"Identifies the last name of the NYC Marshal who performed the eviction or who is scheduled to perform the eviction. \n
+Expected values: {N/A}",STRING
+Residential/Commercial,,Plain Text,"Identifies the property type where the eviction is pending or has been completed. \n
+Expected values: {Residential, Commercial, Unspecified}",STRING
+Borough,,Plain Text,"Identifies the NYC borough where the eviction is pending or has been completed. \n
+Expected values: {Bronx, Manhattan, Brooklyn, Queens, Staten Island}",STRING
+Eviction Zip,,Number,"Identifies the NYC zip code where the eviction is pending or has been completed. \n
+Expected values: {N/A}",STRING
+Ejectment,,Plain Text,"An action in ejectment is a way for a landlord to obtain possession of a residence and may be started in either Civil or Supreme Court.\n
+Expected values: {Not an Ejectment, Ejectment}",STRING
+Eviction/Legal Possession,,Plain Text,"Process by which a warrant of eviction is executed.  Landlord may request an eviction whereby the tenant and his/her property are removed by a marshal, or a legal possession whereby the tenant is removed and his/her property remains under the care and control of the landlord as bailee for the tenant.\n
+Expected values: {Eviction, Possession}",STRING
+Latitude,,Number,"The latitude associated with the provided entity location.\n
+Expected values: {N/A}",STRING
+Longitude,,Number,"The longitude associated with the provided entity location.\n
+Expected values: {N/A}",STRING
+Community Board,,Number,"The NYC community board associated with the provided entity location.\n
+Expected values: {N/A}",STRING
+Council District,,Number,"The NYC council district associated with the provided entity location.\n
+Expected values: {N/A}",STRING
+Census Tract,,Number,"The US census tract associated with the provided entity location.\n
+Expected values: {N/A}",STRING
+BIN,,Number,"The Building Identification Number (BIN) associated with the provided entity location. It is formatted as a seven-digit numerical identifier, which is unique to each building in NYC.\n
+Expected values: {N/A}",STRING
+BBL,,Number,"The Borough, Block, Lot (BBL) associated with the provided entity location. It is formatted as a ten-digit numerical identifier, which is unique to each parcel of real property in NYC.\n
+Expected values: {N/A}",STRING
+NTA,,Plain Text,"The Neighborhood Tabulation Area (NTA) associated with the provided entity location.\n
+Expected values: {N/A}",STRING
