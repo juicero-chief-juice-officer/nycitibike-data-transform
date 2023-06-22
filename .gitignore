@@ -4,12 +4,13 @@
 sa_keys/*
 secrets/*
 secrets/
+ref/* 
 
-tests/*
-tests/
-target/
-dbt_packages/
-logs/
+dbt/nycitibike_transform/tests/*
+dbt/nycitibike_transform/tests/
+dbt/nycitibike_transform/target/
+dbt/nycitibike_transform/dbt_packages/
+dbt/logs/
 
 
 
